@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YieldSense AI — Crop Yield Dashboard</title>
+<style>
+  :root {
+    --soil: #6b4226;
+    --leaf: #3f7d3a;
+    --leaf-light: #e8f2e3;
+    --wheat: #d9a441;
+    --ink: #2b2620;
+    --paper: #faf7f0;
+    --line: #ddd5c4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  header {
+    padding: 2.5rem 2rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.9rem;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    margin: 0.4rem 0 0;
+    color: #6b6353;
+    max-width: 46ch;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  @media (max-width: 720px) {
+    main { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+  .panel h2 {
+    font-size: 1rem;
+    margin: 0 0 1rem;
+    color: var(--leaf);
+    text-transform: none;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: #6b6353;
+    margin: 0.7rem 0 0.25rem;
+  }
+  input, select {
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: var(--paper);
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  button {
+    margin-top: 1.5rem;
+    width: 100%;
+    background: var(--leaf);
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button:hover { background: #336333; }
+  .result-hero {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin: 0 0 0.25rem;
+  }
+  .result-hero .num { font-size: 2.4rem; font-weight: 600; color: var(--leaf); }
+  .result-hero .unit { color: #6b6353; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+  .stat {
+    background: var(--leaf-light);
+    border-radius: 8px;
+    padding: 0.75rem;
+  }
+  .stat .label { font-size: 0.75rem; color: #4f6e4a; }
+  .stat .value { font-size: 1.1rem; font-weight: 600; margin-top: 2px; }
+  .risk-High { color: #b33a3a; }
+  .risk-Moderate { color: var(--wheat); }
+  .risk-Low { color: var(--leaf); }
+  ul.tips { padding-left: 1.1rem; margin: 0.5rem 0 0; }
+  ul.tips li { margin: 0.4rem 0; font-size: 0.9rem; }
+  .empty { color: #948c78; font-size: 0.9rem; }
+  .error { color: #b33a3a; font-size: 0.9rem; margin-top: 0.75rem; }
+  code.api {
+    background: #f1ece0;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>YieldSense AI</h1>
+  <p>Enter farm, weather, and soil conditions to get a predicted crop yield, risk level, and recommendations from the backend model.</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Farm & field inputs</h2>
+    <form id="predict-form">
+      <label>Crop</label>
+      <select id="crop">
+        <option>Wheat</option>
+        <option>Rice</option>
+        <option>Maize</option>
+        <option>Soybean</option>
+        <option>Cotton</option>
+        <option>Sugarcane</option>
+      </select>
+
+      <div class="row">
+        <div>
+          <label>Region</label>
+          <select id="region">
+            <option>North</option><option>South</option><option>East</option>
+            <option>West</option><option>Central</option>
+          </select>
+        </div>
+        <div>
+          <label>Year</label>
+          <input type="number" id="year" value="2026" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div><label>Rainfall (mm)</label><input type="number" id="rainfall_mm" value="950" /></div>
+        <div><label>Avg temperature (°C)</label><input type="number" id="avg_temperature_c" value="24" /></div>
+      </div>
+      <div class="row">
+        <div><label>Humidity (%)</label><input type="number" id="humidity_pct" value="60" /></div>
+        <div><label>Irrigation area (%)</label><input type="number" id="irrigation_pct_area" value="55" /></div>
+      </div>
+      <div class="row">
+        <div><label>Soil pH</label><input type="number" step="0.1" id="soil_ph" value="6.5" /></div>
+        <div><label>Fertilizer (kg/ha)</label><input type="number" id="fertilizer_kg_ha" value="180" /></div>
+      </div>
+      <div class="row">
+        <div><label>Soil nitrogen (kg/ha)</label><input type="number" id="soil_nitrogen_kg_ha" value="120" /></div>
+        <div><label>Soil phosphorus (kg/ha)</label><input type="number" id="soil_phosphorus_kg_ha" value="45" /></div>
+      </div>
+      <div class="row">
+        <div><label>Soil potassium (kg/ha)</label><input type="number" id="soil_potassium_kg_ha" value="150" /></div>
+        <div><label>Farm area (ha)</label><input type="number" id="farm_area_ha" value="10" /></div>
+      </div>
+
+      <button type="submit">Predict yield</button>
+    </form>
+    <p class="empty" style="margin-top:1rem;">API base: <code class="api" id="api-base">http://localhost:8000</code></p>
+  </section>
+
+  <section class="panel">
+    <h2>Prediction</h2>
+    <div id="result">
+      <p class="empty">Fill in the form and click "Predict yield" to see a forecast here. Make sure the backend is running (<code class="api">uvicorn main:app --reload</code>) and the model has been trained.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+const API_BASE = "http://localhost:8000";
+document.getElementById("api-base").textContent = API_BASE;
+
+document.getElementById("predict-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    region: document.getElementById("region").value,
+    crop: document.getElementById("crop").value,
+    year: Number(document.getElementById("year").value),
+    rainfall_mm: Number(document.getElementById("rainfall_mm").value),
+    avg_temperature_c: Number(document.getElementById("avg_temperature_c").value),
+    humidity_pct: Number(document.getElementById("humidity_pct").value),
+    soil_ph: Number(document.getElementById("soil_ph").value),
+    soil_nitrogen_kg_ha: Number(document.getElementById("soil_nitrogen_kg_ha").value),
+    soil_phosphorus_kg_ha: Number(document.getElementById("soil_phosphorus_kg_ha").value),
+    soil_potassium_kg_ha: Number(document.getElementById("soil_potassium_kg_ha").value),
+    irrigation_pct_area: Number(document.getElementById("irrigation_pct_area").value),
+    fertilizer_kg_ha: Number(document.getElementById("fertilizer_kg_ha").value),
+    farm_area_ha: Number(document.getElementById("farm_area_ha").value),
+  };
+
+  const resultEl = document.getElementById("result");
+  resultEl.innerHTML = '<p class="empty">Predicting…</p>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Request failed (${res.status})`);
+    }
+    const data = await res.json();
+
+    resultEl.innerHTML = `
+      <div class="result-hero">
+        <span class="num">${data.predicted_yield_tonnes_per_ha}</span>
+        <span class="unit">tonnes / ha</span>
+      </div>
+      <p class="empty">for ${payload.crop} in ${payload.region}, ${payload.year}</p>
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="label">Estimated total production</div>
+          <div class="value">${data.estimated_total_production_tonnes} t</div>
+        </div>
+        <div class="stat">
+          <div class="label">Risk level</div>
+          <div class="value risk-${data.risk_level}">${data.risk_level}</div>
+        </div>
+      </div>
+      <h2 style="margin-top:1.25rem;">Recommendations</h2>
+      <ul class="tips">${data.recommendations.map(t => `<li>${t}</li>`).join("")}</ul>
+    `;
+  } catch (err) {
+    resultEl.innerHTML = `<p class="error">${err.message}. Is the backend running at ${API_BASE}?</p>`;
+  }
+});
+</script>
+
+</body>
+</html>
