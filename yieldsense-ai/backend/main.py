@@ -19,6 +19,7 @@ import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from data_preprocessing import CATEGORICAL_COLS, engineer_features
@@ -134,7 +135,7 @@ def _risk_level(payload: YieldPredictionRequest) -> str:
 
 
 # ---- Routes ------------------------------------------------------------------
-@app.get("/")
+@app.get("/api/status")
 def root():
     return {"status": "ok", "service": "YieldSense AI API", "model_metrics": _metrics}
 
@@ -204,3 +205,10 @@ def soil_analysis(payload: SoilAnalysisRequest):
         "npk_total_kg_ha": npk_total,
         "fertility_rating": fertility,
     }
+
+
+# ---- Serve the frontend --------------------------------------------------
+# Mounted LAST so it doesn't shadow the /api/* routes above.
+# frontend/index.html sits one level up from backend/, alongside this file's parent.
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
