@@ -159,6 +159,7 @@ def predict_yield(payload: YieldPredictionRequest):
 
     row = row[_feature_cols]
     predicted = float(_model.predict(row)[0])
+    predicted = max(predicted, 0.0)  # yield can't be negative — clamp model extrapolation
     total_production = round(predicted * payload.farm_area_ha, 2)
 
     return {
