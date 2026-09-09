@@ -174,7 +174,7 @@
 
       <button type="submit">Predict yield</button>
     </form>
-    <p class="empty" style="margin-top:1rem;">API base: <code class="api" id="api-base">http://localhost:8000</code></p>
+    <p class="empty" style="margin-top:1rem;">API base: <code class="api" id="api-base">(same origin)</code></p>
   </section>
 
   <section class="panel">
@@ -186,8 +186,11 @@
 </main>
 
 <script>
-const API_BASE = "http://localhost:8000";
-document.getElementById("api-base").textContent = API_BASE;
+// Empty string = call the API on the same origin the page was served from.
+// This works both locally (uvicorn serving the frontend at localhost:8000)
+// and on Render (the deployed backend serves this same file).
+const API_BASE = "";
+document.getElementById("api-base").textContent = API_BASE || window.location.origin;
 
 document.getElementById("predict-form").addEventListener("submit", async (e) => {
   e.preventDefault();
